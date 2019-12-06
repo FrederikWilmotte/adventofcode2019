@@ -1,35 +1,31 @@
 # Advent6 - Part1
 # Day 6: Universal Orbit Map
-orbits = []
 objectA = []
 objectB = []
+zoekA = []
+zoekB = []
 aantalorbits = 0
 afstand = 0
 orbitmap = open("Day6map.txt","r")
 #Laden van orbits is het geheugen
 for orbit in orbitmap:
-    orbits.append(orbit)
-objectA.append("COM")
-while len(objectA) > 0:
+    objectA.append(orbit[:3])
+    objectB.append(orbit[4:7])
+zoekA.append("COM")
+
+#Zoeken van het aantal orbits
+while len(zoekA) > 0:
     i = 0
     afstand = afstand + 1
-    while i < len(objectA):
-        #print("objectA",objectA)
+    while i < len(zoekA):
         j = 0
-        while j < len(orbits):
-            string = orbits[j]
-            eerste = string[:3]
-            tweede = string[4:7]
-            #print("Eerste",eerste)
-            #print("Tweede",tweede)
-            if eerste == objectA[i]:
+        while j < len(objectA):
+            if zoekA[i] == objectA[j]:
                 aantalorbits = aantalorbits + (1 * afstand)
-                #print("Aantal orbits",aantalorbits)
-                #print("Tweede",tweede)
-                objectB.append(tweede)
+                zoekB.append(objectB[j])
             j = j + 1
         i = i + 1
-    objectA.clear()
-    objectA = objectB.copy()
-    objectB.clear()
+    zoekA.clear()
+    zoekA = zoekB.copy()
+    zoekB.clear()
 print("Aantal orbits",aantalorbits)
