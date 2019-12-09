@@ -4,21 +4,16 @@ intcode = [3,225,1,225,6,6,1100,1,238,225,104,0,1002,43,69,224,101,-483,224,224,
 system_id = 5
 address = 0
 memory = system_id
-oppcode = intcode[address]
-oppcode_str = str(oppcode).zfill(5)
-A = oppcode_str[0]
-B = oppcode_str[1]
-C = oppcode_str[2]
-DE = oppcode_str[3:]
+oppcode = str(intcode[address]).zfill(5)
+A = oppcode[0]
+B = oppcode[1]
+C = oppcode[2]
+DE = oppcode[3:]
 while DE != "99":
     #print("Instructie",oppcode_str)
     if DE == "01" or DE == "02" or DE == "05" or DE == "06" or DE == "07" or DE == "08":
         param1 = intcode[address+1]
         param2 = intcode[address+2]
-        param3 = intcode[address+3]
-        # Parameters that an instruction writes to will never be in immediate mode
-        # if A == "0":
-        #    param3 = intcode[param3]
         if B == "0":
             param2 = intcode[param2]
         if C == "0":
@@ -27,9 +22,11 @@ while DE != "99":
         #print("param2",param2)
         #print("param3",param3)
         if DE == "01":
+            param3 = intcode[address+3]
             intcode[param3]=param1+param2
             address = address + 4
         if DE == "02":
+            param3 = intcode[address+3]
             intcode[param3]=param1*param2
             address = address + 4
         if DE == "05":
@@ -43,12 +40,14 @@ while DE != "99":
             else:
                 address = address + 3
         if DE == "07":
+            param3 = intcode[address+3]
             if param1 < param2:
                 intcode[param3]=1
             else:
                 intcode[param3]=0
             address = address + 4
         if DE == "08":
+            param3 = intcode[address+3]
             if param1 == param2:
                 intcode[param3]=1
             else:
@@ -66,12 +65,11 @@ while DE != "99":
     else:
         print("Error DE:",DE)
         break
-    oppcode = intcode[address]
-    oppcode_str = str(oppcode).zfill(5)
-    A = oppcode_str[0]
-    B = oppcode_str[1]
-    C = oppcode_str[2]
-    DE = oppcode_str[3:]
+    oppcode = str(intcode[address]).zfill(5)
+    A = oppcode[0]
+    B = oppcode[1]
+    C = oppcode[2]
+    DE = oppcode[3:]
     #print(intcode)
 solution = memory
 print (solution)

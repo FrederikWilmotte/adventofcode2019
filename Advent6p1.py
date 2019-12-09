@@ -7,13 +7,14 @@ zoekB = []
 aantalorbits = 0
 afstand = 0
 orbitmap = open("Day6map.txt","r")
+
 #Laden van orbits is het geheugen
 for orbit in orbitmap:
     objectA.append(orbit[:3])
     objectB.append(orbit[4:7])
-zoekA.append("COM")
 
-#Zoeken van het aantal orbits
+#Zoeken van het aantal orbits vanaf COM
+zoekA.append("COM")
 while len(zoekA) > 0:
     i = 0
     afstand = afstand + 1

@@ -3,7 +3,6 @@
 
 #Bepalen van de afstand tot object COM
 def orbit_afstand(objectSEARCH):
-    global orbit_stappen
     orbit_stappen = []
     while objectSEARCH != "COM":
         gevonden = "nee"
@@ -29,12 +28,10 @@ for orbit in orbitmap:
     objectB.append(orbit[4:7])
 
 #Bepalen van de afstand van YOU tot COM
-orbit_afstand("YOU")
-wegNaarCOMYOU = orbit_stappen
+wegNaarCOMYOU = orbit_afstand("YOU")
 
 #Bepalen van de afstand van YOU tot SAN
-orbit_afstand("SAN")
-wegNaarCOMSAN = orbit_stappen
+wegNaarCOMSAN = orbit_afstand("SAN")
 
 #Bepalen van de kortste afstand tot het gemeenschappelijke object
 gevonden = "nee"
