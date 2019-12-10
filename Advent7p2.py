@@ -1,117 +1,169 @@
 # Advent7 - Part2
 # Day 7: Amplification Circuit
 
-def intcodeComputer (intcode,inputsignals):
-    address = 0
-    signals = 0
-    oppcode = str(intcode[address]).zfill(5)
-    #A = oppcode[0]
-    B = oppcode[1]
-    C = oppcode[2]
-    DE = oppcode[3:]
-    while DE != "99":
-        print("Instructie",oppcode)
-        if DE == "01" or DE == "02" or DE == "05" or DE == "06" or DE == "07" or DE == "08":
-            param1 = intcode[address+1]
-            param2 = intcode[address+2]
-            if B == "0":
-                param2 = intcode[param2]
-            if C == "0":
-                param1 = intcode[param1]
-            if DE == "01":
-                param3 = intcode[address+3]
-                intcode[param3]=param1+param2
-                address = address + 4
-            if DE == "02":
-                param3 = intcode[address+3]
-                intcode[param3]=param1*param2
-                address = address + 4
-            if DE == "05":
-                if param1 != 0:
-                    address = param2
-                else:
-                    address = address + 3
-            if DE == "06":
-                if param1 == 0:
-                    address = param2
-                else:
-                    address = address + 3
-            if DE == "07":
-                param3 = intcode[address+3]
-                if param1 < param2:
-                    intcode[param3]=1
-                else:
-                    intcode[param3]=0
-                address = address + 4
-            if DE == "08":
-                param3 = intcode[address+3]
-                if param1 == param2:
-                    intcode[param3]=1
-                else:
-                    intcode[param3]=0
-                address = address + 4
-        elif DE == "03" or DE == "04":
-            param1 = intcode[address+1]
-            if DE == "03":
-                intcode[param1] = inputsignals[signals]
-                signals = signals + 1
-            else:
-                outputsignal = intcode[param1]
-            address = address + 2
-        elif DE == "99":
-            break
+from itertools import permutations
+
+def bepaalAllePhases(minPhase,maxPhase):
+    phases = []
+    for phase in range(minPhase,maxPhase+1):
+        phases.append(phase)
+    allePhases = permutations(phases)
+    return allePhases
+
+def thruster(phases,intcode):
+    statusAmp = []
+    intcodeMem = []
+    pointerMem = []
+    signalOut = 0
+    maxAmpNr = 0
+    for phase in phases:
+        pointerMem.append(0)
+        statusAmp.append("run")
+        intcodeMem.append(intcode)
+        (status,signalOut,intcodeMem[maxAmpNr],pointerMem[maxAmpNr]) = amplifier(statusAmp[maxAmpNr],phase,signalOut,intcodeMem[maxAmpNr],pointerMem[maxAmpNr])
+        statusAmp[maxAmpNr] = status
+        maxAmpNr = maxAmpNr + 1
+    while status != "stop":
+        for ampNr in range(0,maxAmpNr):
+            (status,signalOut,intcodeMem[ampNr],pointerMem[ampNr]) = amplifier(statusAmp[ampNr],0,signalOut,intcodeMem[ampNr],pointerMem[ampNr])
+            statusAmp[ampNr] = status
+    return signalOut
+
+def amplifier(status,phase,signalIn,intcode,pointer):
+    signalsIn = []
+    if status == "run":
+        signalsIn.append(phase)
+    signalsIn.append(signalIn)
+    (status,signalOut,intcode,pointer) = intcodeComputer(pointer,intcode,signalsIn)
+    return (status,signalOut,intcode,pointer)
+
+def intcodeComputer (pointer,intcode,signalsIn):
+    status = "run"
+    signalOut = 0
+    instruction = str(intcode[pointer]).zfill(5)
+    (status,pointer,intcode,signalsIn,signalOut) = verwerkInstruction(status,pointer,instruction,intcode,signalsIn,signalOut)
+    while status == "run":
+        instruction = str(intcode[pointer]).zfill(5)
+        (status,pointer,intcode,signalsIn,signalOut) = verwerkInstruction(status,pointer,instruction,intcode,signalsIn,signalOut)
+    return (status,signalOut,intcode,pointer)
+
+def verwerkInstruction(status,pointer,instruction,intcode,signalsIn,signalOut):
+    (opcode,mode1,mode2,mode3) = readInstruction(instruction)
+    if opcode == "01":
+        (pointer,intcode) = opcode01(pointer,intcode,mode1,mode2)
+    elif opcode == "02":
+        (pointer,intcode) = opcode02(pointer,intcode,mode1,mode2)
+    elif opcode == "03":
+        if len(signalsIn) == 0:
+            status = "waiting"
         else:
-            print("Error DE:",DE)
-            break
-        oppcode = str(intcode[address]).zfill(5)
-        A = oppcode[0]
-        B = oppcode[1]
-        C = oppcode[2]
-        DE = oppcode[3:]
-        #print(intcode)
-    return outputsignal
+            (pointer,intcode) = opcode03(pointer,intcode,signalsIn[0])
+            signalsIn.pop(0)
+    elif opcode == "04":
+        (pointer,signalOut) = opcode04(pointer,intcode)
+    elif opcode == "05":
+        pointer = opcode05(pointer,intcode,mode1,mode2)
+    elif opcode == "06":
+        pointer = opcode06(pointer,intcode,mode1,mode2)
+    elif opcode == "07":
+        (pointer,intcode) = opcode07(pointer,intcode,mode1,mode2)
+    elif opcode == "08":
+        (pointer,intcode) = opcode08(pointer,intcode,mode1,mode2)
+    elif opcode == "99":
+        status = "stop"
+    else:
+        print("Error opcode:",opcode)
+        status = "stop"
+    return (status,pointer,intcode,signalsIn,signalOut)
+
+def readInstruction(instruction):
+    mode3 = instruction[0]
+    mode2 = instruction[1]
+    mode1 = instruction[2]
+    opcode = instruction[3:]
+    return (opcode,mode1,mode2,mode3)
+
+def opcode01(pointer,intcode,mode1,mode2):
+    param1 = bepaalParam(pointer+1,intcode,mode1)
+    param2 = bepaalParam(pointer+2,intcode,mode2)
+    positie = intcode[pointer+3]
+    intcode[positie]=param1+param2
+    pointer = pointer + 4
+    return (pointer,intcode)
+        
+def opcode02(pointer,intcode,mode1,mode2):
+    param1 = bepaalParam(pointer+1,intcode,mode1)
+    param2 = bepaalParam(pointer+2,intcode,mode2)
+    positie = intcode[pointer+3]
+    intcode[positie]=param1*param2
+    pointer = pointer + 4
+    return (pointer,intcode)
+
+def opcode03(pointer,intcode,signalIn):
+    positie = intcode[pointer+1]
+    intcode[positie] = signalIn
+    pointer = pointer + 2
+    return (pointer,intcode)
+
+def opcode04(pointer,intcode):
+    positie = intcode[pointer+1]
+    signalOut = intcode[positie]
+    pointer = pointer + 2
+    return (pointer,signalOut)
+
+def opcode05(pointer,intcode,mode1,mode2):
+    param1 = bepaalParam(pointer+1,intcode,mode1)
+    param2 = bepaalParam(pointer+2,intcode,mode2)
+    if param1 != 0:
+        pointer = param2
+    else:
+        pointer = pointer + 3
+    return pointer
+
+def opcode06(pointer,intcode,mode1,mode2):
+    param1 = bepaalParam(pointer+1,intcode,mode1)
+    param2 = bepaalParam(pointer+2,intcode,mode2)
+    if param1 == 0:
+        pointer = param2
+    else:
+        pointer = pointer + 3
+    return pointer
+
+def opcode07(pointer,intcode,mode1,mode2):
+    param1 = bepaalParam(pointer+1,intcode,mode1)
+    param2 = bepaalParam(pointer+2,intcode,mode2)
+    positie = intcode[pointer+3]
+    if param1 < param2:
+        intcode[positie]=1
+    else:
+        intcode[positie]=0
+    pointer = pointer + 4
+    return (pointer,intcode)
+
+def opcode08(pointer,intcode,mode1,mode2):
+    param1 = bepaalParam(pointer+1,intcode,mode1)
+    param2 = bepaalParam(pointer+2,intcode,mode2)
+    positie = intcode[pointer+3]
+    if param1 == param2:
+        intcode[positie]=1
+    else:
+        intcode[positie]=0
+    pointer = pointer + 4
+    return (pointer,intcode)
+
+def bepaalParam(pointer,intcode,mode):
+    param = intcode[pointer]
+    if mode  == "0":
+        param = intcode[param]
+    return param
 
 intcode = [3,8,1001,8,10,8,105,1,0,0,21,38,63,76,93,118,199,280,361,442,99999,3,9,101,3,9,9,102,3,9,9,101,4,9,9,4,9,99,3,9,1002,9,2,9,101,5,9,9,1002,9,5,9,101,5,9,9,1002,9,4,9,4,9,99,3,9,101,2,9,9,102,3,9,9,4,9,99,3,9,101,2,9,9,102,5,9,9,1001,9,5,9,4,9,99,3,9,102,4,9,9,1001,9,3,9,1002,9,5,9,101,2,9,9,1002,9,2,9,4,9,99,3,9,1002,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,1001,9,1,9,4,9,3,9,1001,9,1,9,4,9,3,9,1001,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,101,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,101,2,9,9,4,9,99,3,9,102,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,101,1,9,9,4,9,3,9,102,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,102,2,9,9,4,9,3,9,1001,9,1,9,4,9,99,3,9,101,1,9,9,4,9,3,9,101,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,101,2,9,9,4,9,3,9,1001,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,1002,9,2,9,4,9,99,3,9,1001,9,1,9,4,9,3,9,102,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,101,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,101,1,9,9,4,9,3,9,1001,9,2,9,4,9,99,3,9,1002,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,101,2,9,9,4,9,3,9,101,1,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,101,1,9,9,4,9,3,9,101,2,9,9,4,9,3,9,1002,9,2,9,4,9,99]
-signals = []
+minPhase = 5
+maxPhase = 9
+maxThruster = 0
 
-p1 = 5
-thruster = 0
-while p1 < 10:
-    p2 = 5
-    while p2 < 10:
-        if p2 == p1:
-            p2 = p2 + 1
-        else:
-            p3 = 5
-            while p3 < 10:
-                if p3 == p2 or p3 == p1:
-                    p3 = p3 + 1
-                else:
-                    p4 = 5
-                    while p4 < 10:
-                        if p4 == p3 or p4 == p2 or p4 == p1:
-                            p4 = p4 + 1
-                        else:
-                            p5 = 5
-                            while p5 < 10:
-                                if p5 == p4 or p5 == p3 or p5 == p2 or p5 == p1:
-                                    p5 = p5 + 1
-                                else:
-                                    signals = [p1,0]
-                                    amp1 = intcodeComputer(intcode,signals)
-                                    signals = [p2,amp1]
-                                    amp2 = intcodeComputer(intcode,signals)
-                                    signals = [p3,amp2]
-                                    amp3 = intcodeComputer(intcode,signals)
-                                    signals = [p4,amp3]
-                                    amp4 = intcodeComputer(intcode,signals)
-                                    signals = [p5,amp4]
-                                    amp5 = intcodeComputer(intcode,signals)
-                                    if amp5 > thruster:
-                                        thruster = amp5
-                                    p5 = p5 + 1
-                            p4 = p4 + 1
-                    p3 = p3 + 1
-            p2 = p2 + 1
-    p1 = p1 + 1
-print("Max Thruster",thruster)
+for phases in bepaalAllePhases(minPhase,maxPhase):
+    signalOut = thruster(phases,intcode)
+    if signalOut > maxThruster:
+        maxThruster = signalOut
+print("Max Thruster",maxThruster)
